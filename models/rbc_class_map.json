@@ -1,0 +1,32 @@
+{
+  "idx_to_chula": {
+    "0": "Normal",
+    "1": "Macrocyte",
+    "2": "Microcyte",
+    "3": "Spherocyte",
+    "4": "Target_Cell",
+    "5": "Stomatocyte",
+    "6": "Ovalocyte",
+    "7": "Teardrop",
+    "8": "Burr_Cell",
+    "9": "Schistocyte",
+    "10": "Hypochromia"
+  },
+  "idx_to_hemascope": {
+    "0": "Normocytic",
+    "1": "Macrocytic",
+    "2": "Microcytic",
+    "3": "Spherocyte",
+    "4": "Target Cell",
+    "5": "Mixed/Unclassified",
+    "6": "Elliptocyte",
+    "7": "Tear Drop",
+    "8": "Mixed/Unclassified",
+    "9": "Schistocyte",
+    "10": "Hypochromic"
+  },
+  "img_size": 96,
+  "num_classes": 11,
+  "val_accuracy_pct": 80.81,
+  "arch": "MobileNetV3Large"
+}

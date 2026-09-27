@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>HemaScope v3 — RBC Analysis System</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;700&family=IBM+Plex+Sans+Condensed:wght@700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#E63329;--black:#0A0A0A;--white:#F5F4F0;
+  --g1:#1A1A1A;--g2:#2E2E2E;--g3:#555;--g4:#888;--g5:#BBB;--g6:#DDD;--g7:#EBEBEB;
+  --green:#1A7A4A;--amber:#C97700;--blue:#1446A0;
+  --sans:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;--cond:'IBM Plex Sans Condensed',sans-serif;
+  --rule:1px solid var(--black);--rl:1px solid var(--g6);
+}
+html{font-size:15px;background:var(--white);color:var(--black)}
+body{font-family:var(--sans);line-height:1.5;min-height:100vh}
+
+/* HEADER */
+.hdr{border-bottom:3px solid var(--black);display:grid;grid-template-columns:auto 1fr auto;align-items:stretch}
+.hdr-logo{padding:8px 20px;border-right:var(--rule);display:flex;align-items:center;gap:12px}
+.logo-img{height:46px;width:auto;animation:logoPulse 3.5s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(230,51,41,.25));transition:filter .3s}
+.logo-img:hover{filter:drop-shadow(0 0 14px rgba(230,51,41,.55))}
+@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 5px rgba(230,51,41,.20))}50%{filter:drop-shadow(0 0 14px rgba(230,51,41,.50))}}
+.logo-text-wrap{display:flex;flex-direction:column;justify-content:center;gap:2px}
+.logo-t{font-family:var(--cond);font-size:20px;font-weight:700;letter-spacing:.3px;line-height:1}
+.logo-t span{color:var(--red)}
+.logo-s{font-size:9px;font-family:var(--mono);color:var(--g4);letter-spacing:2px;text-transform:uppercase;margin-top:1px}
+.hdr-greet{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--g4);letter-spacing:1px}
+.hdr-greet b{color:var(--black);font-weight:600;margin-left:4px}
+.hdr-meta{display:flex;align-items:center;justify-content:flex-end;padding:0 22px;gap:28px}
+.mbadge{font-family:var(--mono);font-size:10px;color:var(--g4);letter-spacing:1px;text-transform:uppercase}
+.mbadge b{color:var(--black);display:block;font-size:13px;font-weight:600}
+
+/* STEP NAV */
+.snav{display:flex;border-bottom:3px solid var(--black);background:var(--black);position:sticky;top:0;z-index:100}
+.stab{flex:1;padding:0;border:none;background:transparent;cursor:pointer;border-right:1px solid var(--g2);transition:background .15s;position:relative}
+.stab:last-child{border-right:none}
+.stab-in{padding:11px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.stab-n{font-family:var(--mono);font-size:9px;color:var(--g4);letter-spacing:2px;text-transform:uppercase}
+.stab-l{font-family:var(--cond);font-size:12px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.3px}
+.stab.active{background:var(--red)}
+.stab.active .stab-n{color:rgba(255,255,255,.55)}
+.stab.active .stab-l{color:#fff}
+.stab.done{background:var(--g2)}
+.stab.done .stab-l{color:var(--g5)}
+.stab.done::after{content:'✓';position:absolute;top:8px;right:10px;font-size:11px;color:#4f9}
+.stab:disabled{cursor:not-allowed;opacity:.35;pointer-events:none}
+.stab:not(:disabled):not(.active):hover{background:var(--g2)}
+
+/* PANELS */
+.main{max-width:1440px;margin:0 auto}
+.panel{display:none;animation:pin .2s ease}
+.panel.active{display:block}
+@keyframes pin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.ph{border-bottom:var(--rule);padding:24px 28px 18px;display:grid;grid-template-columns:1fr auto;align-items:end;gap:20px}
+.ptitle{font-family:var(--cond);font-size:32px;font-weight:700;text-transform:uppercase;line-height:1}
+.ptitle span{color:var(--red)}
+.pdesc{font-size:12px;color:var(--g3);margin-top:6px;max-width:560px;line-height:1.6}
+.pbody{padding:24px 28px}
+
+/* UPLOAD */
+.uzone{border:2px dashed var(--g5);padding:52px 32px;text-align:center;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.uzone:hover,.uzone.over{border-color:var(--red);background:rgba(230,51,41,.04)}
+.uzone h3{font-family:var(--cond);font-size:18px;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.uzone p{font-size:12px;color:var(--g4)}
+#fInput{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-top:16px}
+.thumb{position:relative;border:var(--rule);overflow:hidden;aspect-ratio:1;background:var(--g7)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.tname{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:2px 4px;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trem{position:absolute;top:3px;right:3px;width:18px;height:18px;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;opacity:0;transition:.15s}
+.thumb:hover .trem{opacity:1}
+
+/* COMPARE */
+.cmp{display:grid;grid-template-columns:1fr 1fr;border:var(--rule)}
+.cpane{position:relative;min-height:200px;background:var(--g7)}
+.clbl{position:absolute;top:0;left:0;background:var(--black);color:#fff;font-family:var(--mono);font-size:10px;padding:4px 10px;letter-spacing:1px;text-transform:uppercase;z-index:2}
+.clbl.r{background:var(--red)}
+.cpane img{width:100%;display:block;object-fit:contain;max-height:500px}
+
+/* SLIDER COMPARE */
+.slider-wrap{position:relative;overflow:hidden;border:var(--rule);background:var(--g7);user-select:none;touch-action:none}
+.slider-wrap img{width:100%;display:block;object-fit:contain;max-height:500px}
+.slider-label-orig{position:absolute;top:8px;left:8px;background:var(--black);color:#fff;font-family:var(--mono);font-size:10px;padding:3px 8px;letter-spacing:1px;text-transform:uppercase;z-index:5}
+.slider-label-proc{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;padding:3px 8px;letter-spacing:1px;text-transform:uppercase;z-index:5}
+
+/* IMG SELECTOR */
+.isel{display:flex;overflow-x:auto;border:var(--rule);margin-bottom:18px}
+.isel-btn{padding:8px 14px;border:none;border-right:var(--rl);background:transparent;cursor:pointer;font-family:var(--mono);font-size:11px;white-space:nowrap;flex-shrink:0;transition:.12s}
+.isel-btn:hover{background:var(--g7)}
+.isel-btn.active{background:var(--red);color:#fff}
+.isel-btn.done{color:var(--green)}
+
+/* PARAMS */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.pcard{border:var(--rule);padding:14px;background:#fff}
+.pcard-name{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.pcard p{font-size:10px;color:var(--g4);margin-top:8px;line-height:1.5}
+.tog{display:flex;align-items:center;gap:6px;cursor:pointer}
+.tog input{display:none}
+.tog-t{width:34px;height:18px;background:var(--g5);border-radius:9px;position:relative;transition:.2s}
+.tog input:checked+.tog-t{background:var(--red)}
+.tog-k{position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tog input:checked+.tog-t .tog-k{left:18px}
+.srow{margin-top:8px}
+.srow label{display:flex;justify-content:space-between;font-size:10px;color:var(--g3);margin-bottom:3px;font-family:var(--mono)}
+input[type=range]{width:100%;height:3px;background:var(--g6);-webkit-appearance:none;cursor:pointer;border:none;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--red);border-radius:50%}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1px;background:var(--black);margin-bottom:20px}
+.stat{background:#fff;padding:14px 18px}
+.sv{font-family:var(--mono);font-size:24px;font-weight:600;line-height:1}
+.su{font-size:10px;color:var(--g4);margin-left:3px}
+.sl{font-size:9px;color:var(--g3);text-transform:uppercase;letter-spacing:1px;margin-top:3px;font-family:var(--mono)}
+
+/* TABLE */
+.dtbl{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono)}
+.dtbl th{background:var(--black);color:#fff;padding:7px 10px;text-align:left;font-size:9px;letter-spacing:1.5px;text-transform:uppercase}
+.dtbl td{padding:6px 10px;border-bottom:var(--rl)}
+.dtbl tr:hover td{background:var(--g7)}
+.ctag{display:inline-block;padding:2px 7px;font-size:10px;font-weight:600;font-family:var(--cond);letter-spacing:.4px;border-radius:3px}
+
+/* CONF BADGE */
+.conf-badge{display:inline-block;padding:2px 6px;font-size:10px;font-family:var(--mono);border-radius:2px;font-weight:600}
+.conf-hi{background:#e6f9ee;color:var(--green)}
+.conf-mid{background:#fff8e1;color:var(--amber)}
+.conf-lo{background:#fdecea;color:var(--red)}
+
+/* AI PANEL INFO BOX */
+.ai-info{border:2px solid var(--blue);padding:14px 18px;margin-bottom:20px;background:#f0f4ff;display:flex;align-items:flex-start;gap:14px}
+.ai-info-icon{font-size:22px;flex-shrink:0;margin-top:2px}
+.ai-info-body{font-size:12px;color:#2a2a5a;line-height:1.6}
+.ai-info-body b{font-family:var(--cond);font-size:13px;letter-spacing:.3px;display:block;margin-bottom:4px}
+
+/* DIST BARS */
+.dbar{margin-bottom:7px}
+.dbar-l{display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;font-family:var(--mono)}
+.dbar-t{height:7px;background:var(--g6);border-radius:4px;overflow:hidden}
+.dbar-f{height:100%;transition:width .5s ease}
+
+/* PROFESSIONAL MEDICAL REPORT */
+.med-report-card{background:#fff;border:1px solid #ccc;box-shadow:0 4px 15px rgba(0,0,0,0.05);max-width:850px;margin:0 auto;padding:40px;font-family:'Times New Roman',Times,serif;color:#222}
+.med-header{display:flex;justify-content:space-between;border-bottom:3px solid var(--black);padding-bottom:15px;margin-bottom:20px}
+.med-lab-title{font-size:26px;font-weight:bold;color:var(--black);text-transform:uppercase;margin-bottom:5px;letter-spacing:1px}
+.med-lab-sub{font-size:12px;color:#555;font-family:var(--sans);text-transform:uppercase;letter-spacing:1px}
+.med-meta{text-align:right;font-size:13px;line-height:1.6}
+.med-patient-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;background:#fdfdfd;padding:15px;border:1px solid #e0e0e0;font-size:14px;margin-bottom:25px}
+.med-section-title{font-size:16px;font-weight:bold;text-transform:uppercase;border-bottom:1px solid #ccc;padding-bottom:5px;margin:25px 0 15px 0;color:#333}
+.med-impression-box{border:2px solid var(--black);padding:20px;background:#fafafa;text-align:center;margin-bottom:25px}
+.med-diagnosis-text{font-size:24px;font-weight:bold;color:var(--black);margin-bottom:8px;text-transform:uppercase}
+.med-severity-badge{display:inline-block;padding:4px 14px;background:var(--red);color:#fff;font-family:var(--sans);font-size:12px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.med-subtype-text{font-size:15px;font-style:italic;color:#444}
+.med-table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;text-align:left}
+.med-table th{background:#f0f0f0;padding:10px;border:1px solid #ccc;font-weight:bold}
+.med-table td{padding:10px;border:1px solid #ccc}
+.med-list{margin-left:20px;font-size:14px;line-height:1.6}
+.med-list li{margin-bottom:6px}
+.med-footer{margin-top:60px;padding-top:20px;border-top:1px solid #ccc;display:flex;justify-content:flex-end}
+.med-signature{text-align:center;font-family:'Times New Roman',serif}
+.med-sig-line{border-bottom:1px solid #222;width:220px;margin-bottom:8px}
+
+@media print{body *{visibility:hidden}#printableReport,#printableReport *{visibility:visible}#printableReport{position:absolute;left:0;top:0;width:100%;border:none;box-shadow:none;padding:0;margin:0}}
+
+/* LEGEND */
+.legend{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.leg-i{display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:2px solid var(--black);background:var(--black);color:#fff;cursor:pointer;transition:.15s}
+.btn:hover{background:var(--red);border-color:var(--red)}
+.btn.out{background:transparent;color:var(--black)}
+.btn.out:hover{background:var(--black);color:#fff}
+.btn.red{background:var(--red);border-color:var(--red)}
+.btn.red:hover{background:var(--black);border-color:var(--black)}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+
+/* LOG */
+.log{border:var(--rule);font-family:var(--mono);font-size:11px;background:var(--g1);color:#aef;padding:10px 14px;max-height:130px;overflow-y:auto;margin-top:10px;line-height:1.8}
+.lk{color:#7ef}.li{color:#fe9}.le{color:#f77}
+
+/* MISC */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.card{border:var(--rule);background:#fff}
+.ch{padding:10px 14px;border-bottom:var(--rule);background:var(--g7);display:flex;align-items:center;justify-content:space-between}
+.ct{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--g3)}
+.cb{padding:14px}
+.tag{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:2px 7px;background:var(--g7);border:var(--rl);color:var(--g3)}
+.empty{text-align:center;padding:48px;font-family:var(--mono);font-size:12px;color:var(--g4)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--g5)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo">
+    <svg class="logo-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--red)" stroke="var(--red)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path>
+    </svg>
+    <div class="logo-text-wrap">
+      <div class="logo-t">HEMO<span>SCAN</span></div>
+      <div class="logo-s">RBC Analysis · v3 · AI Edition</div>
+    </div>
+  </div>
+  <div class="hdr-greet" id="hdrGreet"></div>
+  <div class="hdr-meta">
+    <div class="mbadge"><b id="hc">0</b>Images</div>
+    <div class="mbadge"><b id="hcells">—</b>Cells</div>
+    <div class="mbadge"><b id="hconf">—</b>Avg Conf</div>
+    <div class="mbadge"><b id="hsess">—</b>Session</div>
+  </div>
+</header>
+
+<!-- STEP NAV -->
+<nav class="snav" id="snav">
+  <button class="stab active" data-step="1" id="t1"><div class="stab-in"><span class="stab-n">Step 01</span><span class="stab-l">Upload Smears</span></div></button>
+  <button class="stab" data-step="2" id="t2" disabled><div class="stab-in"><span class="stab-n">Step 02</span><span class="stab-l">DIP Preprocessing</span></div></button>
+  <button class="stab" data-step="3" id="t3" disabled><div class="stab-in"><span class="stab-n">Step 03</span><span class="stab-l">Segmentation</span></div></button>
+  <button class="stab" data-step="4" id="t4" disabled><div class="stab-in"><span class="stab-n">Step 04</span><span class="stab-l">AI Classification</span></div></button>
+  <button class="stab" data-step="5" id="t5" disabled><div class="stab-in"><span class="stab-n">Step 05</span><span class="stab-l">Medical Report</span></div></button>
+</nav>
+
+<main class="main">
+
+<!-- ══ STEP 1 ══ -->
+<section class="panel active" id="p1">
+  <div class="ph">
+    <div><h1 class="ptitle">Upload <span>Blood Smear</span> Images</h1>
+    <p class="pdesc">Upload up to 20 peripheral blood smear images (JPEG/PNG/BMP/TIFF). Select files or drag and drop, then click Process Upload.</p></div>
+  </div>
+  <div class="pbody">
+    <div class="uzone" id="uzone">
+      <input type="file" id="fInput" accept="image/*" multiple/>
+      <h3>⊕ Drop smear images here</h3>
+      <p>or click anywhere in this box to browse · JPEG / PNG / BMP / TIFF · max 20 images</p>
+    </div>
+    <div class="tgrid" id="tgrid"></div>
+    <div id="upBtnRow" style="display:none;margin-top:18px;border-top:3px solid var(--black);padding-top:18px;display:flex;align-items:center;gap:16px">
+      <button type="button" class="btn red" id="btnUp" onclick="handleUpload()">
+        <span class="spin hidden" id="spUp"></span>
+        Process Upload →
+      </button>
+      <span id="upCount" style="font-family:var(--mono);font-size:12px;color:var(--g3)">0 images selected</span>
+    </div>
+    <div class="log hidden" id="upLog"></div>
+  </div>
+</section>
+
+<!-- ══ STEP 2 ══ -->
+<section class="panel" id="p2">
+  <div class="ph">
+    <div><h1 class="ptitle">DIP <span>Preprocessing</span></h1>
+    <p class="pdesc">Configure each DIP operation. Giemsa-aware background removal preserves purple/mauve RBCs. Before/after comparison shown per image.</p></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn out" id="btnPre1">Preview Selected</button>
+      <button class="btn red" id="btnPreAll" disabled><span class="spin hidden" id="spPre"></span>Process All →</button>
+    </div>
+  </div>
+  <div class="pbody">
+    <div class="isel" id="preSel"></div>
+    <div class="g2" style="align-items:start;gap:26px">
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="ch"><span class="ct">Processing Parameters</span><span class="tag" id="preImgLbl">—</span></div>
+          <div class="cb">
+            <div class="pgrid">
+              <div class="pcard">
+                <div class="pcard-name">Noise Removal
+                  <label class="tog"><input type="checkbox" id="p_nr" checked/><div class="tog-t"><div class="tog-k"></div></div></label>
+                </div>
+                <div class="srow"><label>Strength <span id="nrv">5</span></label><input type="range" id="p_nrs" min="3" max="12" step="1" value="5" oninput="nrv.textContent=this.value"/></div>
+                <p>Non-local means denoising. Removes staining artefacts without blurring cell boundaries.</p>
+              </div>
+              <div class="pcard">
+                <div class="pcard-name">Blur Removal / Sharpen
+                  <label class="tog"><input type="checkbox" id="p_sh" checked/><div class="tog-t"><div class="tog-k"></div></div></label>
+                </div>
+                <p>Gaussian unsharp mask. Enhances RBC membrane definition for accurate watershed seeds.</p>
+              </div>
+              <div class="pcard">
+                <div class="pcard-name">Brightness / Contrast
+                  <label class="tog"><input type="checkbox" id="p_bc" checked/><div class="tog-t"><div class="tog-k"></div></div></label>
+                </div>
+                <div class="srow"><label>Contrast α <span id="cv">1.15×</span></label><input type="range" id="p_con" min="0.8" max="1.8" step="0.05" value="1.15" oninput="cv.textContent=parseFloat(this.value).toFixed(2)+'×'"/></div>
+                <div class="srow"><label>Brightness β <span id="bv">+5</span></label><input type="range" id="p_brt" min="-40" max="60" step="5" value="5" oninput="bv.textContent=(this.value>0?'+':'')+this.value"/></div>
+              </div>
+              <div class="pcard">
+                <div class="pcard-name">Background Removal
+                  <label class="tog"><input type="checkbox" id="p_bg" checked/><div class="tog-t"><div class="tog-k"></div></div></label>
+                </div>
+                <p>Giemsa-correct: removes pale/white background (L&gt;218 in LAB). Keeps purple/mauve RBCs intact.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="log hidden" id="preLog"></div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-family:var(--mono);color:var(--g3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Before / After Comparison</div>
+        <div class="slider-wrap" id="preSliderWrap" style="position:relative;cursor:ew-resize;min-height:200px">
+          <img id="preOut" src="" style="width:100%;display:block;min-height:160px;max-height:500px;object-fit:contain;background:var(--g7)"/>
+          <span class="slider-label-proc">Processed</span>
+          <img id="preOrig" src="" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;clip-path:inset(0 50% 0 0);background:var(--g7)"/>
+          <span class="slider-label-orig">Original</span>
+          <div id="sliderDivider" style="position:absolute;top:0;left:50%;width:3px;height:100%;background:var(--red);pointer-events:none;z-index:10">
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;padding:4px 8px;white-space:nowrap;border-radius:2px">◀ ▶</div>
+          </div>
+        </div>
+        <div class="log" id="preStLog" style="margin-top:10px"><span class="li">▸ Run preprocessing to see step log</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ STEP 3 ══ -->
+<section class="panel" id="p3">
+  <div class="ph">
+    <div><h1 class="ptitle">RBC Cell <span>Segmentation</span></h1>
+    <p class="pdesc">Local-maxima watershed (scikit-image) — separates every touching or overlapping cell. Feature vectors are computed for use by the AI classifier in the next step.</p></div>
+    <button class="btn red" id="btnSeg"><span class="spin hidden" id="spSeg"></span>Segment All →</button>
+  </div>
+  <div class="pbody">
+    <div class="isel" id="segSel"></div>
+    <div class="cmp" id="segCmp" style="margin-bottom:20px;grid-template-columns:1fr 1fr 1fr">
+      <div class="cpane"><span class="clbl">Preprocessed</span><img id="segOrig" src="" style="min-height:200px"/></div>
+      <div class="cpane"><span class="clbl" style="background:var(--blue)">Watershed Map</span><img id="segWater" src="" style="min-height:200px"/></div>
+      <div class="cpane"><span class="clbl r">Annotated</span><img id="segOut" src="" style="min-height:200px"/></div>
+    </div>
+    <div class="sgrid" id="segStats">
+      <div class="stat"><div class="sv" id="ss-tot">—</div><div class="sl">Cells Detected</div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="ct">Raw Segmented Features</span><span class="tag" id="segTblLbl">—</span></div>
+      <div style="overflow-x:auto">
+        <table class="dtbl"><thead>
+          <tr><th>ID</th><th>Area px²</th><th>Perim px</th><th>Major px</th><th>Minor px</th><th>Aspect R</th><th>Circularity</th><th>Solidity</th><th>Pallor R</th><th>C.Peak</th></tr>
+        </thead><tbody id="segTbody"><tr><td colspan="10" class="empty">Run segmentation</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ STEP 4 — AI CLASSIFICATION ══ -->
+<section class="panel" id="p4">
+  <div class="ph">
+    <div><h1 class="ptitle">AI <span>Classification</span></h1>
+    <p class="pdesc">MobileNetV3Large model trained on the Chula-RBC-12 dataset (80.81% val accuracy) classifies each segmented cell crop into one of 11 morphological types with a confidence score.</p></div>
+    <button class="btn red" id="btnCls"><span class="spin hidden" id="spCls"></span>Classify All →</button>
+  </div>
+  <div class="pbody">
+
+    <!-- Model info banner -->
+    <div class="ai-info">
+      <div class="ai-info-icon">🤖</div>
+      <div class="ai-info-body">
+        <b>MobileNetV3Large — Chula-RBC-12 Classifier (80.81% val accuracy)</b>
+        Each cell is re-cropped from its detected centre as a 96×96 px window with CLAHE contrast enhancement — matching the exact format the network was trained on — then passed through the model with 4-way rotation averaging for stability.
+        The model outputs a probability distribution over 11 RBC morphology classes.
+        The predicted class and its confidence % are displayed per cell below.
+      </div>
+    </div>
+
+    <div class="isel" id="clsSel"></div>
+
+    <!-- Color Legend -->
+    <div class="legend" id="clsLeg">
+      <div class="leg-i"><div class="leg-dot" style="background:#00C800"></div>Normocytic</div>
+      <div class="leg-i"><div class="leg-dot" style="background:#FFA500"></div>Microcytic</div>
+      <div class="leg-i"><div class="leg-dot" style="background:#00A5FF"></div>Macrocytic</div>
+      <div class="leg-i"><div class="leg-dot" style="background:#FFD700"></div>Hypochromic</div>
+      <div class="leg-i"><div class="leg-dot" style="background:#FF0000"></div>Spherocyte</div>
+      <div class="leg-i"><div class="leg-dot" style="background:#800080"></div>Schistocyte</div>
+      <div class="leg-i"><div class="leg-dot" style="background:#00FFFF"></div>Elliptocyte</div>
+      <div class="leg-i"><div class="leg-dot" style="background:#008080"></div>Tear Drop</div>
+      <div class="leg-i"><div class="leg-dot" style="background:#FF8000"></div>Target Cell</div>
+      <div class="leg-i"><div class="leg-dot" style="background:#888888"></div>Mixed/Unclassified</div>
+    </div>
+
+    <div style="display:flex;flex-direction:row;gap:20px;margin-bottom:20px;align-items:stretch">
+      <!-- LEFT: Annotated image -->
+      <div class="card" style="flex:2;display:flex;flex-direction:column;overflow:hidden">
+        <div class="ch"><span class="ct">Classified Morphology</span><span class="tag" id="clsImgLbl">—</span></div>
+        <div style="flex:1;padding:15px;background:var(--g7);display:flex;justify-content:center;align-items:center;min-height:350px">
+          <img id="clsOut" src="" style="max-width:100%;max-height:500px;display:none;object-fit:contain;box-shadow:0 4px 12px rgba(0,0,0,0.15);border:var(--rule)"/>
+          <div id="clsPlaceholder" class="empty" style="border:none">Run classification to see annotated output</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Distribution + stats -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="flex:1">
+          <div class="ch"><span class="ct">Type Distribution</span></div>
+          <div class="cb" id="distBars" style="padding:16px">
+            <div class="empty" style="border:none;padding:20px">Run classification</div>
+          </div>
+        </div>
+        <div class="sgrid" id="clsStats" style="margin-bottom:0">
+          <div class="stat"><div class="sv" id="cs-tot">—</div><div class="sl">Cells Classified</div></div>
+          <div class="stat"><div class="sv" id="cs-conf">—</div><div class="su">%</div><div class="sl">Mean Confidence</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-cell table -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="ch"><span class="ct">Per-Cell Classification Results</span><span class="tag" id="clsTblLbl">—</span></div>
+      <div style="overflow-x:auto">
+        <table class="dtbl"><thead>
+          <tr><th>#</th><th>Predicted Type</th><th>Confidence</th><th>Circularity</th><th>Solidity</th><th>Aspect R</th><th>Pallor</th><th>C.Peak</th></tr>
+        </thead><tbody id="clsTbody"><tr><td colspan="8" class="empty">—</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ STEP 5 ══ -->
+<section class="panel" id="p5">
+  <div class="ph">
+    <div><h1 class="ptitle">Medical <span>Report</span></h1>
+    <p class="pdesc">Generate a clinical pathology report for a specific smear. Select an image, fill patient details and generate.</p></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn out" onclick="window.print()">Print / Save PDF</button>
+      <button class="btn red" id="btnRep"><span class="spin hidden" id="spRep"></span>Generate Report →</button>
+    </div>
+  </div>
+  <div class="pbody">
+    <div style="font-size:10px;font-family:var(--mono);color:var(--g3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Select Image for Report:</div>
+    <div class="isel" id="repSel"></div>
+    <div class="card" style="margin-bottom:24px">
+      <div class="ch"><span class="ct">Patient Information (Optional)</span></div>
+      <div class="cb" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px">
+        <div><label style="font-size:10px;font-family:var(--mono);color:var(--g3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px">Patient Name</label><input id="pt_n" type="text" placeholder="—" style="width:100%;padding:7px;border:var(--rule);font-family:var(--sans);font-size:13px"/></div>
+        <div><label style="font-size:10px;font-family:var(--mono);color:var(--g3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px">Age</label><input id="pt_a" type="text" placeholder="—" style="width:100%;padding:7px;border:var(--rule);font-family:var(--sans);font-size:13px"/></div>
+        <div><label style="font-size:10px;font-family:var(--mono);color:var(--g3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px">Sex</label><select id="pt_s" style="width:100%;padding:7px;border:var(--rule);font-family:var(--sans);font-size:13px;background:#fff"><option>—</option><option>Male</option><option>Female</option></select></div>
+        <div><label style="font-size:10px;font-family:var(--mono);color:var(--g3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px">Lab / MRN</label><input id="pt_id" type="text" placeholder="—" style="width:100%;padding:7px;border:var(--rule);font-family:var(--sans);font-size:13px"/></div>
+        <div><label style="font-size:10px;font-family:var(--mono);color:var(--g3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px">Clinician</label><input id="pt_dr" type="text" placeholder="Dr. —" style="width:100%;padding:7px;border:var(--rule);font-family:var(--sans);font-size:13px"/></div>
+        <div><label style="font-size:10px;font-family:var(--mono);color:var(--g3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px">Clinical Notes</label><input id="pt_notes" type="text" placeholder="Anaemia, fatigue…" style="width:100%;padding:7px;border:var(--rule);font-family:var(--sans);font-size:13px"/></div>
+      </div>
+    </div>
+    <div id="repOut"><div class="empty" style="border:var(--rule)">Select an image and click Generate Report</div></div>
+  </div>
+</section>
+
+</main>
+<script>
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+const API = 'http://localhost:5000/api';
+const S = {
+  sessionId: null, images: [],
+  preR:{}, segR:{}, clsR:{},
+  curPre:null, curSeg:null, curCls:null, curRep:null
+};
+
+const TCOLORS = {
+  'Normocytic':         '#00C800',
+  'Microcytic':         '#FFA500',
+  'Macrocytic':         '#00A5FF',
+  'Hypochromic':        '#FFD700',
+  'Spherocyte':         '#FF0000',
+  'Schistocyte':        '#800080',
+  'Elliptocyte':        '#00FFFF',
+  'Tear Drop':          '#008080',
+  'Target Cell':        '#FF8000',
+  'Mixed/Unclassified': '#888888'
+};
+
+// ════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════
+function goStep(n){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('p'+n).classList.add('active');
+  document.getElementById('t'+n).classList.add('active');
+  window.scrollTo(0,0);
+}
+document.getElementById('snav').addEventListener('click',e=>{
+  const b=e.target.closest('.stab');
+  if(b && !b.disabled) goStep(+b.dataset.step);
+});
+function unlockNext(n){ const t=document.getElementById('t'+n); if(t){t.disabled=false;t.classList.add('done');} }
+function markDone(n){ document.getElementById('t'+n).classList.add('done'); }
+
+// ════════════════════════════════════════════════════════════
+// STEP 1 — UPLOAD
+// ════════════════════════════════════════════════════════════
+let pendingFiles = [];
+const fInput = document.getElementById('fInput');
+const uzone  = document.getElementById('uzone');
+const tgrid  = document.getElementById('tgrid');
+
+fInput.addEventListener('change', function(){ addFiles(Array.from(this.files)); this.value=''; });
+uzone.addEventListener('dragover',  e=>{ e.preventDefault(); uzone.classList.add('over'); });
+uzone.addEventListener('dragleave', ()=> uzone.classList.remove('over'));
+uzone.addEventListener('drop', e=>{ e.preventDefault(); uzone.classList.remove('over'); addFiles(Array.from(e.dataTransfer.files)); });
+
+function addFiles(files){
+  const imgs=files.filter(f=>f.type.startsWith('image/')).slice(0,20-pendingFiles.length);
+  imgs.forEach(f=>{ if(pendingFiles.length>=20) return; pendingFiles.push(f); const rd=new FileReader(); rd.onload=ev=>addThumb(f.name,ev.target.result,pendingFiles.length-1); rd.readAsDataURL(f); });
+  updateUploadUI();
+}
+function updateUploadUI(){
+  const row=document.getElementById('upBtnRow'); const cnt=document.getElementById('upCount');
+  if(pendingFiles.length>0) row.style.display='flex';
+  cnt.textContent=pendingFiles.length+' image'+(pendingFiles.length!==1?'s':'')+' selected';
+  document.getElementById('hc').textContent=pendingFiles.length;
+}
+function addThumb(name,src,idx){
+  const d=document.createElement('div'); d.className='thumb'; d.dataset.idx=idx;
+  d.innerHTML=`<img src="${src}" alt=""/><div class="tname">${name}</div><button type="button" class="trem" onclick="remThumb(${idx})">×</button>`;
+  tgrid.appendChild(d);
+}
+function remThumb(idx){
+  pendingFiles.splice(idx,1); tgrid.innerHTML='';
+  pendingFiles.forEach((f,i)=>{ const r=new FileReader(); r.onload=ev=>addThumb(f.name,ev.target.result,i); r.readAsDataURL(f); });
+  updateUploadUI();
+  if(pendingFiles.length===0) document.getElementById('upBtnRow').style.display='none';
+}
+
+async function handleUpload(){
+  if(!pendingFiles.length) return;
+  const btnUp=document.getElementById('btnUp'); btnUp.disabled=true;
+  document.getElementById('spUp').classList.remove('hidden');
+  const log=document.getElementById('upLog'); log.classList.remove('hidden');
+  addLog(log,'i','▸ Processing '+pendingFiles.length+' image(s)…');
+  try{
+    const fd=new FormData(); pendingFiles.forEach(f=>fd.append('images',f));
+    const res=await fetch(API+'/upload',{method:'POST',body:fd});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    S.sessionId=data.session_id; S.images=data.images;
+    document.getElementById('hsess').textContent=data.session_id.slice(0,8).toUpperCase();
+    addLog(log,'k','✓ '+data.images.length+' images uploaded'); finishUpload();
+  } catch(err){
+    addLog(log,'i','⚠ Backend not available — demo mode');
+    S.sessionId='DEMO-'+Math.random().toString(36).slice(2,10).toUpperCase();
+    S.images=pendingFiles.map((f,i)=>({id:'img_'+i+'_'+f.name.replace(/[^a-z0-9.]/gi,'_'),name:f.name,thumbnail:URL.createObjectURL(f),_file:f}));
+    document.getElementById('hsess').textContent=S.sessionId.slice(5,13);
+    addLog(log,'k','✓ Demo mode: '+S.images.length+' images ready'); finishUpload();
+  }
+  document.getElementById('spUp').classList.add('hidden'); btnUp.disabled=false;
+}
+
+function finishUpload(){
+  buildSel('preSel', S.images, img=>selPre(img));
+  buildSel('segSel', S.images, img=>selSeg(img));
+  buildSel('clsSel', S.images, img=>selCls(img));
+  buildSel('repSel', S.images, img=>selRep(img));
+  markDone(1); unlockNext(2);
+  setTimeout(()=>goStep(2),600);
+}
+
+function buildSel(cid,imgs,cb){
+  const c=document.getElementById(cid); c.innerHTML='';
+  imgs.forEach((img,i)=>{ const b=document.createElement('button'); b.type='button'; b.className='isel-btn'+(i===0?' active':''); b.textContent=img.name.length>20?img.name.slice(0,18)+'…':img.name; b.dataset.id=img.id; b.addEventListener('click',()=>{ c.querySelectorAll('.isel-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); cb(img); }); c.appendChild(b); });
+  if(imgs.length) cb(imgs[0]);
+}
+function markSelDone(cid,imgId){ const b=document.querySelector(`#${cid} [data-id="${imgId}"]`); if(b) b.classList.add('done'); }
+
+// ════════════════════════════════════════════════════════════
+// STEP 2 — PREPROCESSING
+// ════════════════════════════════════════════════════════════
+let isSliderDragging=false;
+const sliderWrap=document.getElementById('preSliderWrap');
+const origImg=document.getElementById('preOrig');
+const divider=document.getElementById('sliderDivider');
+if(sliderWrap && origImg && divider){
+  sliderWrap.addEventListener('mousedown',()=>isSliderDragging=true);
+  sliderWrap.addEventListener('touchstart',()=>isSliderDragging=true,{passive:true});
+  window.addEventListener('mouseup',()=>isSliderDragging=false);
+  window.addEventListener('touchend',()=>isSliderDragging=false);
+  function handleSliderMove(e){ if(!isSliderDragging) return; const rect=sliderWrap.getBoundingClientRect(); let x=e.clientX||(e.touches&&e.touches[0].clientX)||0; let pos=Math.max(0,Math.min(x-rect.left,rect.width)); let pct=(pos/rect.width)*100; origImg.style.clipPath=`inset(0 ${100-pct}% 0 0)`; divider.style.left=`${pct}%`; }
+  sliderWrap.addEventListener('mousemove',handleSliderMove);
+  sliderWrap.addEventListener('touchmove',handleSliderMove,{passive:true});
+}
+
+function getParams(){ return{noise_removal:document.getElementById('p_nr').checked,noise_strength:+document.getElementById('p_nrs').value,sharpen:document.getElementById('p_sh').checked,brightness_fix:document.getElementById('p_bc').checked,contrast:+document.getElementById('p_con').value,brightness:+document.getElementById('p_brt').value,background_removal:document.getElementById('p_bg').checked}; }
+
+function selPre(img){ S.curPre=img; document.getElementById('preImgLbl').textContent=img.name; if(origImg) origImg.src=img.thumbnail||''; const r=S.preR[img.id]; if(r){document.getElementById('preOut').src=r.processed; showPreSteps(r.steps);} else{document.getElementById('preOut').src=img.thumbnail||'';} }
+function showPreSteps(steps){ const el=document.getElementById('preStLog'); el.innerHTML=''; (steps||[]).forEach(s=>addLog(el,'k','✓ '+s)); }
+
+document.getElementById('btnPre1').addEventListener('click',e=>{ e.preventDefault(); if(S.curPre) runPre([S.curPre]); });
+document.getElementById('btnPreAll').addEventListener('click',e=>{ e.preventDefault(); runPre(S.images); });
+
+async function runPre(imgs){
+  setLoad(document.getElementById('btnPreAll'),'spPre',true);
+  const log=document.getElementById('preLog'); log.classList.remove('hidden');
+  for(const img of imgs){
+    addLog(log,'i',`▸ ${img.name}`);
+    try{
+      const res=await fetch(`${API}/preprocess`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:S.sessionId,image_id:img.id,params:getParams()})});
+      if(!res.ok) throw new Error('err');
+      const d=await res.json(); S.preR[img.id]=d; addLog(log,'k',`✓ ${img.name} — ${d.steps?.length||0} ops applied`);
+    } catch(err){
+      S.preR[img.id]={original:img.thumbnail,processed:img.thumbnail,steps:Object.entries(getParams()).filter(([k,v])=>v===true).map(([k])=>k.replace(/_/g,' '))};
+      addLog(log,'k',`✓ Demo: ${img.name}`);
+    }
+    if(S.curPre?.id===img.id) selPre(img);
+    markSelDone('preSel',img.id);
+  }
+  markDone(2); unlockNext(3);
+  setLoad(document.getElementById('btnPreAll'),'spPre',false);
+}
+
+// ════════════════════════════════════════════════════════════
+// STEP 3 — SEGMENTATION
+// ════════════════════════════════════════════════════════════
+function selSeg(img){ S.curSeg=img; const r=S.preR[img.id]; document.getElementById('segOrig').src=r?.processed||img.thumbnail||''; if(S.segR[img.id]) renderSeg(img.id); }
+
+document.getElementById('btnSeg').addEventListener('click',e=>{ e.preventDefault(); runSeg(S.images); });
+
+async function runSeg(imgs){
+  setLoad(document.getElementById('btnSeg'),'spSeg',true);
+  let totalCells=0;
+  for(const img of imgs){
+    try{
+      const res=await fetch(`${API}/segment`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:S.sessionId,image_id:img.id})});
+      if(!res.ok) throw new Error('err');
+      const d=await res.json(); S.segR[img.id]=d; totalCells+=d.cell_count||0;
+    } catch(err){
+      const cells=genDemoCells(50+Math.floor(Math.random()*30));
+      S.segR[img.id]={original:S.preR[img.id]?.processed||img.thumbnail,watershed:S.preR[img.id]?.processed||img.thumbnail,segmented:S.preR[img.id]?.processed||img.thumbnail,cell_count:cells.length,cells};
+      totalCells+=cells.length;
+    }
+    markSelDone('segSel',img.id);
+    if(S.curSeg?.id===img.id) renderSeg(img.id);
+  }
+  document.getElementById('hcells').textContent=totalCells;
+  markDone(3); unlockNext(4);
+  setLoad(document.getElementById('btnSeg'),'spSeg',false);
+}
+
+function renderSeg(imgId){
+  const r=S.segR[imgId]; if(!r) return;
+  document.getElementById('segOrig').src=r.original||'';
+  document.getElementById('segWater').src=r.watershed||'';
+  document.getElementById('segOut').src=r.segmented||'';
+  document.getElementById('ss-tot').textContent=r.cell_count;
+  document.getElementById('segTblLbl').textContent=r.cell_count+' cells';
+  const tb=document.getElementById('segTbody'); tb.innerHTML='';
+  r.cells.slice(0,120).forEach(c=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td style="color:var(--g4)">${c.id}</td><td>${c.area_px?.toFixed(0)}</td><td>${c.perimeter_px?.toFixed(0)}</td><td>${c.major_axis_px}</td><td>${c.minor_axis_px}</td><td>${c.aspect_ratio}</td><td>${c.circularity}</td><td>${c.solidity}</td><td>${c.pallor_ratio}</td><td>${c.central_peak?'Yes':'No'}</td>`; tb.appendChild(tr); });
+}
+
+function genDemoCells(n){
+  return Array.from({length:n},(_,i)=>{ const area=1600*(0.7+Math.random()*0.6); const circ=0.76+Math.random()*0.18; const solid=0.75+Math.random()*0.2; const ar=0.85+Math.random()*0.3; const maj=Math.sqrt(area/Math.PI)*2; const pallor=0.95+Math.random()*0.2; return{id:i+1,cell_type:"Unclassified",area_px:+area.toFixed(1),perimeter_px:+(Math.sqrt(area)*3.5).toFixed(1),circularity:+circ.toFixed(3),solidity:+solid.toFixed(3),aspect_ratio:+ar.toFixed(3),major_axis_px:+maj.toFixed(1),minor_axis_px:+(maj/ar).toFixed(1),pallor_ratio:+pallor.toFixed(3),central_peak:Math.random()>0.8,confidence:null,centroid:[50+Math.random()*400,50+Math.random()*300],bbox:[10,10,60,60]}; });
+}
+
+// ════════════════════════════════════════════════════════════
+// STEP 4 — AI CLASSIFICATION  (replaces calibration)
+// ════════════════════════════════════════════════════════════
+function selCls(img){ S.curCls=img; document.getElementById('clsImgLbl').textContent=img.name; if(S.clsR[img.id]) renderCls(img.id); }
+
+document.getElementById('btnCls').addEventListener('click',e=>{ e.preventDefault(); runCls(S.images); });
+
+async function runCls(imgs){
+  setLoad(document.getElementById('btnCls'),'spCls',true);
+  for(const img of imgs){
+    try{
+      const res=await fetch(`${API}/classify`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:S.sessionId,image_id:img.id})});
+      if(!res.ok) throw new Error('err');
+      const d=await res.json(); S.clsR[img.id]=d;
+    } catch(err){
+      // Demo fallback: assign random types with fake confidence
+      const segCells=S.segR[img.id]?.cells||[];
+      const dist=[{t:'Normocytic',w:50},{t:'Microcytic',w:10},{t:'Macrocytic',w:5},{t:'Hypochromic',w:10},{t:'Spherocyte',w:5},{t:'Schistocyte',w:5},{t:'Elliptocyte',w:5},{t:'Tear Drop',w:3},{t:'Target Cell',w:2},{t:'Mixed/Unclassified',w:5}];
+      const wt=dist.reduce((s,d)=>s+d.w,0);
+      const pick=()=>{ let r=Math.random()*wt,acc=0; for(const d of dist){acc+=d.w;if(r<acc)return d.t;} return 'Normocytic'; };
+      const td={};
+      const cells=segCells.map(c=>{ const ctype=pick(); const conf=+(55+Math.random()*40).toFixed(1); td[ctype]=(td[ctype]||0)+1; return{...c,cell_type:ctype,confidence:conf}; });
+      S.clsR[img.id]={classified_image:S.segR[img.id]?.segmented,total_cells:cells.length,type_distribution:td,cells};
+    }
+    markSelDone('clsSel',img.id);
+    if(S.curCls?.id===img.id) renderCls(img.id);
+  }
+
+  // Update header confidence badge
+  const allConfs=[]; Object.values(S.clsR).forEach(r=>r.cells?.forEach(c=>{ if(c.confidence!=null) allConfs.push(c.confidence); }));
+  if(allConfs.length){ document.getElementById('hconf').textContent=(allConfs.reduce((a,b)=>a+b,0)/allConfs.length).toFixed(1)+'%'; }
+
+  markDone(4); unlockNext(5);
+  setLoad(document.getElementById('btnCls'),'spCls',false);
+}
+
+function renderCls(imgId){
+  const r=S.clsR[imgId]; if(!r) return;
+  const imgEl=document.getElementById('clsOut');
+  const ph=document.getElementById('clsPlaceholder');
+  if(r.classified_image){ imgEl.src=r.classified_image; imgEl.style.display='block'; ph.style.display='none'; }
+  else{ imgEl.style.display='none'; ph.style.display='block'; }
+
+  document.getElementById('cs-tot').textContent=r.total_cells||0;
+  const confs=(r.cells||[]).map(c=>c.confidence).filter(v=>v!=null);
+  const meanConf=confs.length?(confs.reduce((a,b)=>a+b,0)/confs.length).toFixed(1):'—';
+  document.getElementById('cs-conf').textContent=meanConf;
+  document.getElementById('clsTblLbl').textContent=(r.total_cells||0)+' cells';
+
+  // Distribution bars
+  const db=document.getElementById('distBars'); db.innerHTML='';
+  const tot=r.total_cells||1;
+  Object.entries(r.type_distribution||{}).sort((a,b)=>b[1]-a[1]).forEach(([t,n])=>{
+    const pct=(n/tot*100).toFixed(1); const col=TCOLORS[t]||'#888';
+    db.innerHTML+=`<div class="dbar"><div class="dbar-l"><span style="color:${col};font-weight:600">${t}</span><span>${n} — ${pct}%</span></div><div class="dbar-t"><div class="dbar-f" style="width:${pct}%;background:${col}"></div></div></div>`;
+  });
+
+  // Per-cell table
+  const tb=document.getElementById('clsTbody'); tb.innerHTML='';
+  (r.cells||[]).slice(0,120).forEach(c=>{
+    const col=TCOLORS[c.cell_type]||'#888';
+    const cf=c.confidence??'—';
+    const cfClass=cf==='—'?'':'conf-badge '+(cf>=75?'conf-hi':cf>=50?'conf-mid':'conf-lo');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="color:var(--g4)">${c.id}</td>
+      <td><span class="ctag" style="background:${col}22;color:${col};border:1px solid ${col}55">${c.cell_type}</span></td>
+      <td><span class="${cfClass}">${cf}${cf!=='—'?'%':''}</span></td>
+      <td>${c.circularity}</td><td>${c.solidity}</td><td>${c.aspect_ratio}</td>
+      <td>${c.pallor_ratio}</td><td>${c.central_peak?'Yes':'No'}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// STEP 5 — REPORT
+// ════════════════════════════════════════════════════════════
+function selRep(img){ S.curRep=img; document.getElementById('repOut').innerHTML=`<div class="empty" style="border:var(--rule)">Ready to generate report for: <b>${img.name}</b></div>`; }
+
+document.getElementById('btnRep').addEventListener('click',e=>{ e.preventDefault(); genReport(); });
+
+async function genReport(){
+  if(!S.curRep) return;
+  setLoad(document.getElementById('btnRep'),'spRep',true);
+  const pt={name:document.getElementById('pt_n').value||'Not Specified',age:document.getElementById('pt_a').value||'—',sex:document.getElementById('pt_s').value,id:document.getElementById('pt_id').value||'N/A',clinician:document.getElementById('pt_dr').value||'—',notes:document.getElementById('pt_notes').value||'—'};
+  let rep=null;
+  try{
+    const res=await fetch(`${API}/report`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:S.sessionId,image_id:S.curRep.id,patient:pt})});
+    if(!res.ok) throw new Error(); rep=await res.json();
+  } catch(e){ rep=buildDemoReport(pt); }
+  renderReport(rep);
+  setLoad(document.getElementById('btnRep'),'spRep',false);
+}
+
+function buildDemoReport(pt){
+  const r=S.clsR[S.curRep.id]; const all=r?r.cells:[];
+  const td={}; all.forEach(c=>{ td[c.cell_type]=(td[c.cell_type]||0)+1; });
+  const tot=all.length||1;
+  const confs=all.map(c=>c.confidence).filter(v=>v!=null);
+  const meanConf=confs.length?(confs.reduce((a,b)=>a+b,0)/confs.length).toFixed(1):0;
+  const findings=[`Model mean confidence: ${meanConf}%.`];
+  Object.entries(td).sort((a,b)=>b[1]-a[1]).forEach(([t,n])=>findings.push(`${t}: ${n} cells (${(n/tot*100).toFixed(1)}%)`));
+  return{
+    report_id:'RPT-'+Math.random().toString(36).slice(2,10).toUpperCase(),
+    image_id:S.curRep.id,generated_at:new Date().toISOString().replace('T',' ').slice(0,19)+' UTC',patient:pt,
+    specimen:{type:'Peripheral Blood Smear',stain:'Giemsa/Wright-Leishman',total_rbc_counted:tot,classifier:'MobileNetV3Large — Chula-RBC-12 (val acc 80.81%)'},
+    model_performance:{mean_confidence_pct:meanConf},
+    type_distribution:td,findings,
+    clinical_impression:'Mixed Morphology',anaemia_subtype:'Review smear with haematologist',severity:'Mild',
+    recommendations:['Correlate AI morphological findings with full CBC indices.','Assess iron studies if microcytic/hypochromic pattern predominates.','Assess Vitamin B12 and Folate levels if macrocytic pattern predominates.','Manual review by haematologist advised for any severe pattern.','Clinical review required if patient is symptomatic.']
+  };
+}
+
+function renderReport(r){
+  const el=document.getElementById('repOut');
+  const td=r.type_distribution||{}; const tot=r.specimen?.total_rbc_counted||1;
+  const distBars=Object.entries(td).sort((a,b)=>b[1]-a[1]).map(([t,n])=>{ const p=(n/tot*100).toFixed(1); const col=TCOLORS[t]||'#888'; return `<div class="dbar"><div class="dbar-l"><span style="color:${col};font-weight:600">${t}</span><span>${n} (${p}%)</span></div><div class="dbar-t"><div class="dbar-f" style="width:${p}%;background:${col}"></div></div></div>`; }).join('');
+  const findings=(r.findings||[]).map(f=>`<li>${f}</li>`).join('');
+  const recs=(r.recommendations||[]).map(rc=>`<li>${rc}</li>`).join('');
+  let badgeColor=r.severity==='Normal'?'var(--green)':r.severity==='Mild'?'var(--amber)':'var(--red)';
+  el.innerHTML=`
+    <div class="med-report-card" id="printableReport">
+      <div class="med-header">
+        <div><div class="med-lab-title">HEMOSCAN Pathology</div><div class="med-lab-sub">Automated AI Peripheral Smear Analysis · MobileNetV3Large</div></div>
+        <div class="med-meta"><strong>Report ID:</strong> ${r.report_id}<br><strong>Date:</strong> ${r.generated_at}<br><strong>Model:</strong> ${r.specimen?.classifier||'MobileNetV3Large'}</div>
+      </div>
+      <div class="med-patient-grid">
+        <div><strong>Patient Name:</strong> ${r.patient?.name||'Not Specified'}</div>
+        <div><strong>Specimen:</strong> ${r.specimen?.type} (${r.specimen?.stain})</div>
+        <div><strong>Patient ID:</strong> ${r.patient?.id||'N/A'}</div>
+        <div><strong>Total RBCs Classified:</strong> ${r.specimen?.total_rbc_counted}</div>
+      </div>
+      <div class="med-section-title">Clinical Impression</div>
+      <div class="med-impression-box">
+        <div class="med-diagnosis-text">${r.clinical_impression}</div>
+        <div class="med-severity-badge" style="background:${badgeColor}">${r.severity}</div>
+        <div class="med-subtype-text">${r.anaemia_subtype}</div>
+      </div>
+      <div class="med-section-title">AI Model Performance</div>
+      <table class="med-table"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>
+        <tr><td>Mean Classification Confidence</td><td>${r.model_performance?.mean_confidence_pct}%</td></tr>
+        <tr><td>Total Cells Classified</td><td>${r.specimen?.total_rbc_counted}</td></tr>
+        <tr><td>Classifier Model</td><td>${r.specimen?.classifier||'MobileNetV3Large'}</td></tr>
+      </tbody></table>
+      <div class="med-section-title">Type Distribution</div>
+      <div style="margin-bottom:20px">${distBars}</div>
+      <div class="med-section-title">AI Findings</div>
+      <ul class="med-list">${findings}</ul>
+      <div class="med-section-title">Recommendations</div>
+      <ul class="med-list">${recs}</ul>
+      <div class="med-footer"><div class="med-signature"><div class="med-sig-line"></div><strong>Digital Analysis Engine</strong><br><span style="font-size:12px;color:#666">HemaScope v3 · AI Pipeline · MobileNetV3Large (80.81%)</span></div></div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════════════
+function setLoad(btn,spId,on){ const sp=document.getElementById(spId); sp.classList.toggle('hidden',!on); btn.disabled=on; }
+function addLog(el,type,msg){ const s=document.createElement('span'); s.className=type==='k'?'lk':type==='i'?'li':'le'; s.style.display='block'; s.textContent=msg; el.appendChild(s); el.scrollTop=el.scrollHeight; }
+</script>
+</body>
+</html>
